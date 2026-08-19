@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { getCategoryIcon } from '../shared/categoryIcons'
 import { FileText, Info, Clock, MapPin, Navigation, Train, Plane, Bus, Car, Ship, Sailboat, Bike, CarTaxiFront, Route, Coffee, Ticket, Star, Heart, Camera, Flag, Lightbulb, AlertTriangle, ShoppingBag, Bookmark, Hotel, LogIn, LogOut, KeyRound, BedDouble, Utensils, Users, LucideIcon } from 'lucide-react'
 import { accommodationsApi, mapsApi, pluginsApi } from '../../api/client'
-import { apiOrigin } from '../../api/origin'
+import { absoluteUrl } from '../../api/origin'
 import type { Trip, Day, Place, Category, AssignmentsMap, DayNote } from '../../types'
 import { isDayInAccommodationRange, getDayOrder } from '../../utils/dayOrder'
 import { formatMoney, formatMoneySum, splitReservationDateTime, type MoneyEntry } from '../../utils/formatters'
@@ -50,12 +50,12 @@ function escHtml(str) {
 }
 
 // Resolves against the configured server origin (see JourneyBookPDF.tsx's
-// abs() for why): apiOrigin() is empty on web, so this print window keeps its
-// current window.location.origin behaviour unchanged there.
+// abs() for why): absoluteUrl() falls back to window.location.origin, so
+// this print window keeps its current behaviour unchanged on web.
 function absUrl(url) {
   if (!url) return null
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
-  return (apiOrigin() || window.location.origin) + (url.startsWith('/') ? '' : '/') + url
+  return absoluteUrl(url)
 }
 
 function safeImg(url) {

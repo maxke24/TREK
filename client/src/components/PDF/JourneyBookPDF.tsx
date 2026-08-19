@@ -1,7 +1,7 @@
 // Journey Photo Book PDF — Polarsteps-inspired, magazine-density
 import { marked } from 'marked'
 import { sanitizeRichTextHtml } from '@trek/shared'
-import { apiOrigin } from '../../api/origin'
+import { absoluteUrl } from '../../api/origin'
 import type { JourneyDetail, JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
 
 function esc(str: string | null | undefined): string {
@@ -18,12 +18,12 @@ function md(str: string | null | undefined): string {
 
 // Resolves against the configured server origin so images still load when
 // this HTML is rendered into a srcdoc iframe served from https://localhost
-// (the Android shell) rather than the real TREK origin. apiOrigin() is empty
-// on web, so this is unchanged there: window.location.origin as before.
+// (the Android shell) rather than the real TREK origin. absoluteUrl() is
+// unchanged on web, falling back to window.location.origin as before.
 function abs(url: string | null | undefined): string {
   if (!url) return ''
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url
-  return (apiOrigin() || window.location.origin) + (url.startsWith('/') ? '' : '/') + url
+  return absoluteUrl(url)
 }
 
 function pSrc(p: JourneyPhoto): string {

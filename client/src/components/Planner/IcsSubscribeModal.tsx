@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { X, RefreshCw, Calendar, Power } from 'lucide-react'
 import { SubscribeLinks } from './SubscribeLinks'
+import { absoluteUrl } from '../../api/origin'
 
 interface IcsSubscribeModalProps {
   /** Token endpoint base, e.g. `/api/trips/123/feed` or `/api/feed/user`. */ // relative-ok: doc comment; callers already pass an apiUrl()-wrapped value
@@ -13,11 +14,12 @@ interface IcsSubscribeModalProps {
 
 // A server that has no APP_URL configured hands back a host-relative path; the
 // webcal:// handoff and Google deep link need an absolute URL, so resolve it
-// against the current origin as a fallback.
+// with absoluteUrl() — the configured server origin when set (the Android
+// shell), the current page origin otherwise (web).
 function absolutize(url: string): string {
   if (!url) return ''
   if (/^https?:\/\//i.test(url)) return url
-  if (url.startsWith('/')) return window.location.origin + url
+  if (url.startsWith('/')) return absoluteUrl(url)
   return url
 }
 

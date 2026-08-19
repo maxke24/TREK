@@ -14,6 +14,20 @@ export function apiUrl(path: string): string {
   return `${apiOrigin()}${path}`
 }
 
+/**
+ * Turns an app-absolute path into a fully qualified URL, even on a web build
+ * where `apiOrigin()` is empty. Falls back to the page's own origin, so
+ * callers that need an absolute URL regardless of build configuration (a
+ * `webcal://` link, an image `src` inside a printed/exported document) get
+ * one instead of the empty-string prefix `apiUrl()` would produce.
+ *
+ * Unlike `apiUrl()`, this is never left relative — that's the point of it.
+ */
+export function absoluteUrl(path: string): string {
+  const origin = apiOrigin() || window.location.origin
+  return `${origin}${path.startsWith('/') ? '' : '/'}${path}`
+}
+
 /** Full websocket URL. Falls back to the page's own host on web builds. */
 export function wsUrl(token: string): string {
   const origin = apiOrigin()
