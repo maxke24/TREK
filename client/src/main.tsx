@@ -29,6 +29,7 @@ import './index.css'
 import { maybeInstallTouchDragPolyfill } from './utils/touchDragPolyfill'
 import { startConnectivityProbe } from './sync/connectivity'
 import { requestPersistentStorage } from './sync/persistentStorage'
+import { initNative } from './native'
 
 maybeInstallTouchDragPolyfill()
 startConnectivityProbe()
@@ -42,3 +43,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </React.StrictMode>,
 )
+
+void initNative()
