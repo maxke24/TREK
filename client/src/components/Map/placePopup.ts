@@ -37,7 +37,7 @@ function iconSvg(iconName: string | null | undefined, size: number, color: strin
 // Only data: thumbnails and our own photo-proxy URLs are safe to drop straight
 // into an <img src> — everything else is a fetch seed, not a displayable URL.
 function isDisplayablePhoto(url: string | null | undefined): url is string {
-  return !!url && (url.startsWith('data:') || url.startsWith('/api/maps/place-photo/'))
+  return !!url && (url.startsWith('data:') || url.startsWith('/api/maps/place-photo/')) // relative-ok: comparing against a server-produced value, not building a request
 }
 
 const CARD_OPEN = '<div style="font-family:var(--font-system);max-width:220px;">'

@@ -720,7 +720,7 @@ export const pluginsApi = {
   // the prefix or points off-origin. Without this a plugin could send
   // sub='/../../auth/me' and drive arbitrary authenticated /api routes as the user.
   invoke: (id: string, sub: string, init?: { method?: string; body?: unknown }) => {
-    const prefix = `/api/plugins/${id}/`
+    const prefix = `/api/plugins/${id}/` // relative-ok: used only to validate the parsed pathname against window.location.origin, not to build a request
     let resolved: URL
     try {
       resolved = new URL(String(sub).replace(/^\/+/, ''), window.location.origin + prefix)
@@ -730,7 +730,7 @@ export const pluginsApi = {
     if (resolved.origin !== window.location.origin || !resolved.pathname.startsWith(prefix)) {
       return Promise.reject(new Error('plugin route escapes its namespace'))
     }
-    const url = resolved.pathname.slice('/api'.length) + resolved.search
+    const url = resolved.pathname.slice('/api'.length) + resolved.search // relative-ok: relative to apiClient's baseURL, which is already apiUrl('/api')
     return apiClient.request({ url, method: init?.method || 'GET', data: init?.body }).then(r => r.data)
   },
 }

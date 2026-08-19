@@ -63,7 +63,7 @@ export interface SyncMeta {
 }
 
 export interface BlobCacheEntry {
-  /** Relative URL, e.g. "/api/files/42/download" */
+  /** Relative URL, e.g. "/api/files/42/download" */ // relative-ok: doc comment describing a server-provided value, not a URL construction
   url: string;
   /**
    * Trip this blob belongs to, so it is evicted together with the trip in

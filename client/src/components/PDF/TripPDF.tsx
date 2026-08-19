@@ -64,7 +64,7 @@ function safeImg(url) {
   // The in-app place-photo proxy always streams a JPEG but has no file extension
   // (it ends in …/bytes), so the extension check below would wrongly reject it —
   // which is why persisted place photos showed as category icons in the PDF.
-  if (url.startsWith('/api/maps/place-photo/')) return absUrl(url)
+  if (url.startsWith('/api/maps/place-photo/')) return absUrl(url) // relative-ok: comparing against a server-produced value; absUrl() resolves it against apiOrigin()
   return /\.(jpe?g|png|webp|bmp|tiff?)(\?.*)?$/i.test(url) ? absUrl(url) : null
 }
 

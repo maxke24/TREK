@@ -4,7 +4,7 @@ import { X, RefreshCw, Calendar, Power } from 'lucide-react'
 import { SubscribeLinks } from './SubscribeLinks'
 
 interface IcsSubscribeModalProps {
-  /** Token endpoint base, e.g. `/api/trips/123/feed` or `/api/feed/user`. */
+  /** Token endpoint base, e.g. `/api/trips/123/feed` or `/api/feed/user`. */ // relative-ok: doc comment; callers already pass an apiUrl()-wrapped value
   endpoint: string
   title: string
   description: string

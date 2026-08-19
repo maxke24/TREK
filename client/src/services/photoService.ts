@@ -109,7 +109,7 @@ export function fetchPhoto(
   }
 
   // If photoId is already our stable proxy URL, use it directly — no API round-trip needed
-  if (photoId && photoId.startsWith('/api/maps/place-photo/')) {
+  if (photoId && photoId.startsWith('/api/maps/place-photo/')) { // relative-ok: comparing against a server-produced value, not building a request
     const entry: PhotoEntry = { photoUrl: photoId, thumbDataUrl: null }
     cache.set(cacheKey, entry)
     callback?.(entry)

@@ -27,7 +27,7 @@ function abs(url: string | null | undefined): string {
 }
 
 function pSrc(p: JourneyPhoto): string {
-  return abs(`/api/photos/${p.photo_id}/original`)
+  return abs(`/api/photos/${p.photo_id}/original`) // relative-ok: abs() resolves against apiOrigin() itself, see above
 }
 
 function fmtDate(d: string): string {
@@ -83,7 +83,7 @@ function renderPhotoBlock(photos: JourneyPhoto[]): string {
 export async function downloadJourneyBookPDF(journey: JourneyDetail) {
   const entries = (journey.entries || []).filter(e => e.type !== 'skeleton')
   const allPhotos = entries.flatMap(e => e.photos || [])
-  const coverUrl = journey.cover_image ? abs(`/uploads/${journey.cover_image}`) : (allPhotos[0] ? pSrc(allPhotos[0]) : '')
+  const coverUrl = journey.cover_image ? abs(`/uploads/${journey.cover_image}`) : (allPhotos[0] ? pSrc(allPhotos[0]) : '') // relative-ok: abs() resolves against apiOrigin() itself, see above
 
   const grouped = groupByDate(entries)
   const dates = [...grouped.keys()].sort()

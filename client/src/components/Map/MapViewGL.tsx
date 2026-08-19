@@ -143,7 +143,7 @@ function createMarkerElement(place: Place & { category_color?: string; category_
   // to its stacked slot, not to the map viewport.
   wrap.style.cssText = `width:${outer}px;height:${outer}px;cursor:pointer;`
 
-  const hasPhoto = photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('/api/maps/place-photo/'))
+  const hasPhoto = photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('/api/maps/place-photo/')) // relative-ok: comparing against a server-produced value, not building a request
   if (hasPhoto) {
     wrap.innerHTML = `
       <div style="
@@ -722,7 +722,7 @@ export function MapViewGL({
       cleanups.push(onThumbReady(cacheKey, thumb => setThumb(cacheKey, thumb)))
       if (!cached && !isLoading(cacheKey)) {
         const photoId =
-          (place.image_url?.startsWith('/api/maps/place-photo/') ? place.image_url : null)
+          (place.image_url?.startsWith('/api/maps/place-photo/') ? place.image_url : null) // relative-ok: comparing against a server-produced value, not building a request
           || place.google_place_id
           || place.osm_id
           || place.image_url

@@ -165,7 +165,7 @@ export default function SharedTripPage() {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${trip.cover_image.startsWith('http') ? trip.cover_image : apiUrl(trip.cover_image.startsWith('/') ? trip.cover_image : '/uploads/' + trip.cover_image)})`,
+              backgroundImage: `url(${trip.cover_image.startsWith('http') ? trip.cover_image : apiUrl(trip.cover_image.startsWith('/') ? trip.cover_image : '/uploads/' + trip.cover_image)})`, // relative-ok: already apiUrl()-wrapped; the guard's stripper only matches a literal directly after apiUrl(, not this ternary
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               opacity: 0.15,
