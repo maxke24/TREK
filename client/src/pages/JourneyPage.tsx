@@ -1,5 +1,6 @@
 import PageShell from '../components/Layout/PageShell'
 import { useTranslation, TransHtml } from '../i18n'
+import { apiUrl } from '../api/origin'
 import {
   Plus, Search, Sparkles, Calendar, MapPin, BookOpen, Camera,
   Check, X, ChevronRight, RefreshCw, Users,
@@ -178,7 +179,7 @@ export default function JourneyPage() {
                   {/* Cover image */}
                   {activeJourney.cover_image && (
                     <div className="absolute inset-0 z-[1]">
-                      <img src={`/uploads/${activeJourney.cover_image}`} className="w-full h-full object-cover" alt="" />
+                      <img src={apiUrl(`/uploads/${activeJourney.cover_image}`)} className="w-full h-full object-cover" alt="" />
                       <div className="absolute inset-0" style={{ background: pickGradient(activeJourney.id), opacity: 0.45 }} />
                     </div>
                   )}
@@ -407,7 +408,7 @@ function JourneyCard({ journey, onClick }: { journey: Journey & { entry_count?: 
       <div className="h-[170px] relative overflow-hidden" style={{ background: pickGradient(j.id) }}>
         {j.cover_image && (
           <>
-            <img src={`/uploads/${j.cover_image}`} className="absolute inset-0 w-full h-full object-cover" alt="" />
+            <img src={apiUrl(`/uploads/${j.cover_image}`)} className="absolute inset-0 w-full h-full object-cover" alt="" />
             <div className="absolute inset-0" style={{ background: pickGradient(j.id), opacity: 0.4 }} />
           </>
         )}

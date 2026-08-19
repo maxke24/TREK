@@ -1,4 +1,5 @@
 import { MapPin, Camera, Smile, Laugh, Meh, Frown, Sun, CloudSun, Cloud, CloudRain, CloudLightning, Snowflake } from 'lucide-react'
+import { apiUrl } from '../../api/origin'
 import { formatLocationName } from '../../utils/formatters'
 import type { JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
 
@@ -26,7 +27,7 @@ const WEATHER_ICONS: Record<string, typeof Sun> = {
 }
 
 function photoUrl(p: JourneyPhoto): string {
-  return `/api/photos/${p.photo_id}/thumbnail`
+  return apiUrl(`/api/photos/${p.photo_id}/thumbnail`)
 }
 
 function stripMarkdown(text: string): string {

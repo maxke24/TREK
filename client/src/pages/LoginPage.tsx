@@ -20,6 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import React from 'react';
+import { apiUrl } from '../api/origin';
 import ToggleSwitch from '../components/Settings/ToggleSwitch';
 import { SUPPORTED_LANGUAGES, useTranslation } from '../i18n';
 import { useLogin } from './login/useLogin';
@@ -711,7 +712,7 @@ export default function LoginPage(): React.ReactElement {
                   </div>
                 )}
                 <a
-                  href={`/api/auth/oidc/login${inviteToken ? '?invite=' + encodeURIComponent(inviteToken) : ''}`}
+                  href={apiUrl(`/api/auth/oidc/login${inviteToken ? '?invite=' + encodeURIComponent(inviteToken) : ''}`)}
                   style={{
                     width: '100%',
                     padding: '12px',
@@ -1306,7 +1307,7 @@ export default function LoginPage(): React.ReactElement {
                 <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
               </div>
               <a
-                href={`/api/auth/oidc/login${inviteToken ? '?invite=' + encodeURIComponent(inviteToken) : ''}`}
+                href={apiUrl(`/api/auth/oidc/login${inviteToken ? '?invite=' + encodeURIComponent(inviteToken) : ''}`)}
                 style={{
                   marginTop: 12,
                   width: '100%',

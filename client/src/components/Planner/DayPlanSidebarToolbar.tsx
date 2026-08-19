@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { ChevronsDownUp, ChevronsUpDown, FileDown, Undo2, ArrowUpDown, CalendarPlus, Route as RouteIcon } from 'lucide-react'
+import { apiUrl } from '../../api/origin'
 import { downloadTripPDF } from '../PDF/TripPDF'
 import { DayReorderPopup } from './DayReorderPopup'
 import Tooltip from '../shared/Tooltip'
@@ -147,7 +148,7 @@ export function DayPlanSidebarToolbar({
                   setIcsMenuVisible(false)
                   setIcsHover(false)
                   try {
-                    const res = await fetch(`/api/trips/${tripId}/export.ics`, { credentials: 'include' })
+                    const res = await fetch(apiUrl(`/api/trips/${tripId}/export.ics`), { credentials: 'include' })
                     if (!res.ok) throw new Error()
                     const blob = await res.blob()
                     const url = URL.createObjectURL(blob)
@@ -183,7 +184,7 @@ export function DayPlanSidebarToolbar({
         </div>
         {subscribeOpen && (
           <IcsSubscribeModal
-            endpoint={`/api/trips/${tripId}/feed`}
+            endpoint={apiUrl(`/api/trips/${tripId}/feed`)}
             title="Subscribe to calendar"
             description="This link stays in sync with your trip automatically. Calendar apps re-fetch it every hour."
             onClose={() => setSubscribeOpen(false)}

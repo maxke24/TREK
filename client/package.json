@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "lint:check": "eslint .",
     "lint:pages": "node scripts/check-page-pattern.mjs",
+    "lint:urls": "node scripts/check-absolute-urls.mjs",
     "theme:lint": "node scripts/theme-lint.mjs",
     "theme:lint:strict": "node scripts/theme-lint.mjs --strict",
     "e2e": "playwright test",

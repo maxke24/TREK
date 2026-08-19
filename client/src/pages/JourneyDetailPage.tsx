@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/authStore'
 import { journeyApi } from '../api/client'
+import { apiUrl } from '../api/origin'
 import Navbar from '../components/Layout/Navbar'
 import JourneyMap from '../components/Journey/JourneyMapAuto'
 import { DAY_COLORS } from '../components/Journey/dayColors'
@@ -179,7 +180,7 @@ export default function JourneyDetailPage() {
             <div className="rounded-none md:rounded-2xl -mx-4 md:mx-0 overflow-hidden relative p-5 md:p-7" style={{ background: pickGradient(current.id), color: 'white' }}>
                 {current.cover_image && (
                   <div className="absolute inset-0 z-[1]">
-                    <img src={`/uploads/${current.cover_image}`} className="w-full h-full object-cover" alt="" />
+                    <img src={apiUrl(`/uploads/${current.cover_image}`)} className="w-full h-full object-cover" alt="" />
                     <div className="absolute inset-0" style={{ background: pickGradient(current.id), opacity: 0.55 }} />
                   </div>
                 )}

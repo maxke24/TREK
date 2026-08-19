@@ -18,6 +18,7 @@ import {
 import { createElement, useEffect, useRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MapContainer, Marker, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { apiUrl } from '../api/origin';
 import { getCategoryIcon } from '../components/shared/categoryIcons';
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../constants/mapDefaults';
 import { SUPPORTED_LANGUAGES, useTranslation } from '../i18n';
@@ -164,7 +165,7 @@ export default function SharedTripPage() {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${trip.cover_image.startsWith('http') ? trip.cover_image : trip.cover_image.startsWith('/') ? trip.cover_image : '/uploads/' + trip.cover_image})`,
+              backgroundImage: `url(${trip.cover_image.startsWith('http') ? trip.cover_image : apiUrl(trip.cover_image.startsWith('/') ? trip.cover_image : '/uploads/' + trip.cover_image)})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               opacity: 0.15,

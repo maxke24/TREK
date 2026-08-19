@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { X, Check, Calendar, ChevronRight, Camera } from 'lucide-react'
+import { apiUrl } from '../../api/origin'
 import { useTranslation } from '../../i18n'
 import type { JourneyEntry, JourneyTrip } from '../../store/journeyStore'
 import { groupPhotosByDate } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
@@ -58,7 +59,7 @@ export function ProviderPicker({ provider, userId, entries, trips, existingAsset
     setSearchTo(to)
     setSearchPage(page)
     try {
-      const res = await fetch(`/api/integrations/memories/${provider}/search`, {
+      const res = await fetch(apiUrl(`/api/integrations/memories/${provider}/search`), {
         method: 'POST', credentials: 'include', signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from, to, page, size: 50 }),
@@ -89,7 +90,7 @@ export function ProviderPicker({ provider, userId, entries, trips, existingAsset
     setHasMore(false)
     try {
       const qs = album.passphrase ? `?passphrase=${encodeURIComponent(album.passphrase)}` : ''
-      const res = await fetch(`/api/integrations/memories/${provider}/albums/${album.id}/photos${qs}`, { credentials: 'include', signal })
+      const res = await fetch(apiUrl(`/api/integrations/memories/${provider}/albums/${album.id}/photos${qs}`), { credentials: 'include', signal })
       if (res.ok) setPhotos((await res.json()).assets || [])
     } catch (e: any) { if (e.name !== 'AbortError') {} }
     if (!signal.aborted) setLoading(false)
@@ -97,7 +98,7 @@ export function ProviderPicker({ provider, userId, entries, trips, existingAsset
 
   const loadAlbums = async () => {
     try {
-      const res = await fetch(`/api/integrations/memories/${provider}/albums`, { credentials: 'include' })
+      const res = await fetch(apiUrl(`/api/integrations/memories/${provider}/albums`), { credentials: 'include' })
       if (res.ok) setAlbums((await res.json()).albums || [])
     } catch {}
   }
@@ -348,13 +349,13 @@ export function ProviderPicker({ provider, userId, entries, trips, existingAsset
                           }`}
                         >
                           <img
-                            src={`/api/integrations/memories/${provider}/assets/0/${asset.id}/${userId}/thumbnail${selectedAlbumPassphrase ? `?passphrase=${encodeURIComponent(selectedAlbumPassphrase)}` : ''}`}
+                            src={apiUrl(`/api/integrations/memories/${provider}/assets/0/${asset.id}/${userId}/thumbnail${selectedAlbumPassphrase ? `?passphrase=${encodeURIComponent(selectedAlbumPassphrase)}` : ''}`)}
                             alt=""
                             className="w-full h-full object-cover"
                             loading="lazy"
                             onError={e => {
                               const img = e.currentTarget
-                              const original = `/api/integrations/memories/${provider}/assets/0/${asset.id}/${userId}/original${selectedAlbumPassphrase ? `?passphrase=${encodeURIComponent(selectedAlbumPassphrase)}` : ''}`
+                              const original = apiUrl(`/api/integrations/memories/${provider}/assets/0/${asset.id}/${userId}/original${selectedAlbumPassphrase ? `?passphrase=${encodeURIComponent(selectedAlbumPassphrase)}` : ''}`)
                               if (!img.src.includes('/original')) img.src = original
                             }}
                           />

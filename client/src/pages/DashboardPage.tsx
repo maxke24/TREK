@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from '../i18n'
+import { apiUrl } from '../api/origin'
 import Navbar from '../components/Layout/Navbar'
 import DemoBanner from '../components/Layout/DemoBanner'
 import TripFormModal from '../components/Trips/TripFormModal'
@@ -202,7 +203,7 @@ export default function DashboardPage(): React.ReactElement {
               </div>
               {allSubOpen && (
                 <IcsSubscribeModal
-                  endpoint="/api/feed/user"
+                  endpoint={apiUrl('/api/feed/user')}
                   title="Subscribe to all trips"
                   description="One calendar feed for all your active trips, kept in sync automatically. Excludes archived trips and trips that ended more than 90 days ago."
                   onClose={() => setAllSubOpen(false)}

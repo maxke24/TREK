@@ -532,7 +532,7 @@ export const adminApi = {
     model: string,
     onProgress: (p: { status?: string; total?: number; completed?: number; error?: string }) => void,
   ): Promise<void> => {
-    const res = await fetch('/api/admin/llm/local/pull', {
+    const res = await fetch(apiUrl('/api/admin/llm/local/pull'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
@@ -959,7 +959,7 @@ export const backupApi = {
   list: () => apiClient.get('/backup/list').then(r => r.data),
   create: () => apiClient.post('/backup/create').then(r => r.data),
   download: async (filename: string): Promise<void> => {
-    const res = await fetch(`/api/backup/download/${filename}`, {
+    const res = await fetch(apiUrl(`/api/backup/download/${filename}`), {
       credentials: 'include',
     })
     if (!res.ok) throw new Error('Download failed')

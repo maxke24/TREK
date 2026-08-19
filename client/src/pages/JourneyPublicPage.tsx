@@ -20,6 +20,7 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react';
+import { apiUrl } from '../api/origin';
 import { DAY_COLORS } from '../components/Journey/dayColors';
 import JournalBody from '../components/Journey/JournalBody';
 import JourneyMap from '../components/Journey/JourneyMap';
@@ -68,7 +69,7 @@ const WEATHER_CONFIG: Record<string, { icon: typeof Sun; label: string }> = {
 };
 
 function photoUrl(p: { photo_id: number }, shareToken: string, kind: 'thumbnail' | 'original' = 'original'): string {
-  return `/api/public/journey/${shareToken}/photos/${p.photo_id}/${kind}`;
+  return apiUrl(`/api/public/journey/${shareToken}/photos/${p.photo_id}/${kind}`);
 }
 
 function formatDate(d: string, locale?: string): { weekday: string; month: string; day: number } {
@@ -781,7 +782,7 @@ export default function JourneyPublicPage() {
               dark={document.documentElement.classList.contains('dark')}
               readOnly
               onEntryClick={(entry) => setViewingEntry(entry as any)}
-              publicPhotoUrl={(photoId) => `/api/public/journey/${token}/photos/${photoId}/original`}
+              publicPhotoUrl={(photoId) => apiUrl(`/api/public/journey/${token}/photos/${photoId}/original`)}
               carouselBottom="calc(env(safe-area-inset-bottom, 16px) + 8px)"
             />
           )}
@@ -838,7 +839,7 @@ export default function JourneyPublicPage() {
         <MobileEntryView
           entry={viewingEntry as any}
           readOnly
-          publicPhotoUrl={(photoId) => `/api/public/journey/${token}/photos/${photoId}/original`}
+          publicPhotoUrl={(photoId) => apiUrl(`/api/public/journey/${token}/photos/${photoId}/original`)}
           onClose={() => setViewingEntry(null)}
           onEdit={() => {}}
           onDelete={() => {}}

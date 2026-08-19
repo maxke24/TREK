@@ -5,6 +5,7 @@ import { useSettingsStore, hasStoredLanguage } from '../../store/settingsStore'
 import { useTranslation, detectBrowserLanguage } from '../../i18n'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { authApi, configApi } from '../../api/client'
+import { apiUrl } from '../../api/origin'
 import { getApiErrorMessage } from '../../types'
 
 interface AppConfig {
@@ -104,7 +105,7 @@ export function useLogin() {
       if (exchangeInitiated.current) return
       exchangeInitiated.current = true
       setIsLoading(true)
-      fetch('/api/auth/oidc/exchange?code=' + encodeURIComponent(oidcCode), { credentials: 'include' })
+      fetch(apiUrl('/api/auth/oidc/exchange?code=' + encodeURIComponent(oidcCode)), { credentials: 'include' })
         .then(r => r.json())
         .then(async data => {
           window.history.replaceState({}, '', '/login')
@@ -157,7 +158,7 @@ export function useLogin() {
           // Skip auto-redirect when config is from cache — network is unreliable
           // and auto-redirecting to the IdP could loop if the proxy changed.
           if (!fromCache && !config.password_login && config.oidc_login && config.oidc_configured && config.has_users && !invite && !noRedirect) {
-            window.location.href = '/api/auth/oidc/login'
+            window.location.href = apiUrl('/api/auth/oidc/login')
           }
         }
       })

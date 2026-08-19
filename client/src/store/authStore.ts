@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authApi } from '../api/client'
+import { apiUrl } from '../api/origin'
 import { connect, disconnect } from '../api/websocket'
 import type { User } from '../types'
 import { getApiErrorMessage } from '../types'
@@ -196,7 +197,7 @@ export const useAuthStore = create<AuthState>()(
     // browser doesn't get a pre-paint flash of this user's theme.
     clearAppearanceSnapshot()
     // 4. Tell server to clear the httpOnly cookie (best-effort).
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+    await fetch(apiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' }).catch(() => {})
     // 5. Clear service worker caches containing sensitive data.
     if ('caches' in window) {
       await Promise.all([

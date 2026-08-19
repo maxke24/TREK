@@ -4,6 +4,7 @@ import { X, ImagePlus, Plus, Trash2, UserPlus, Archive, ArchiveRestore } from 'l
 import { useJourneyStore } from '../../store/journeyStore'
 import { useTranslation } from '../../i18n'
 import { journeyApi } from '../../api/client'
+import { apiUrl } from '../../api/origin'
 import { useToast } from '../shared/Toast'
 import ConfirmDialog from '../shared/ConfirmDialog'
 import JourneyShareSection from './JourneyShareSection'
@@ -108,7 +109,7 @@ export function JourneySettingsDialog({ journey, onClose, onSaved, onOpenInvite,
             >
               {journey.cover_image ? (
                 <>
-                  <img src={`/uploads/${journey.cover_image}`} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />
+                  <img src={apiUrl(`/uploads/${journey.cover_image}`)} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />
                   <span className="relative z-10 flex items-center gap-1.5"><ImagePlus size={14} /> {t('journey.settings.changeCover')}</span>
                 </>
               ) : (

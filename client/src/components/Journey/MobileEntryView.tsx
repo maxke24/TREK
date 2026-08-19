@@ -5,6 +5,7 @@ import {
   Sun, CloudSun, Cloud, CloudRain, CloudLightning, Snowflake,
   ThumbsUp, ThumbsDown, ChevronDown,
 } from 'lucide-react'
+import { apiUrl } from '../../api/origin'
 import JournalBody from './JournalBody'
 import { formatLocationName } from '../../utils/formatters'
 import type { JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
@@ -27,7 +28,7 @@ const WEATHER_CONFIG: Record<string, { icon: typeof Sun; label: string }> = {
 
 function photoUrl(p: JourneyPhoto, size: 'thumbnail' | 'original' = 'original', builder?: (id: number) => string): string {
   if (builder) return builder(p.photo_id)
-  return `/api/photos/${p.photo_id}/${size}`
+  return apiUrl(`/api/photos/${p.photo_id}/${size}`)
 }
 
 interface Props {
