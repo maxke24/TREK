@@ -56,23 +56,28 @@ export async function initNative(): Promise<void> {
 export async function saveAndOpen(filename: string, blob: Blob): Promise<boolean> {
   if (!('Capacitor' in window)) return false
 
-  const { Filesystem, Directory } = await import('@capacitor/filesystem')
-  const { Share } = await import('@capacitor/share')
+  try {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem')
+    const { Share } = await import('@capacitor/share')
 
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(reader.error)
-    // readAsDataURL gives "data:<mime>;base64,<data>" — Filesystem wants the tail.
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
-    reader.readAsDataURL(blob)
-  })
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onerror = () => reject(reader.error)
+      // readAsDataURL gives "data:<mime>;base64,<data>" — Filesystem wants the tail.
+      reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+      reader.readAsDataURL(blob)
+    })
 
-  const written = await Filesystem.writeFile({
-    path: filename,
-    data: base64,
-    directory: Directory.Cache,
-  })
+    const written = await Filesystem.writeFile({
+      path: filename,
+      data: base64,
+      directory: Directory.Cache,
+    })
 
-  await Share.share({ title: filename, url: written.uri })
-  return true
+    await Share.share({ title: filename, url: written.uri })
+    return true
+  } catch (err) {
+    console.error('[native] saveAndOpen failed', err)
+    throw err
+  }
 }
