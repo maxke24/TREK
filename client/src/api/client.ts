@@ -47,6 +47,7 @@ import {
 } from '@trek/shared'
 import { getSocketId } from './websocket'
 import { probeNow } from '../sync/connectivity'
+import { apiUrl } from './origin'
 
 /**
  * Validate a response payload against its @trek/shared Zod schema — but only in
@@ -117,7 +118,7 @@ function translateRateLimit(): string {
 }
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: apiUrl('/api'),
   withCredentials: true,
   timeout: 8000,
   headers: {
