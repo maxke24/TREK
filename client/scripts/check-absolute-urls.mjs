@@ -9,12 +9,27 @@
  *
  * A literal already wrapped in apiUrl(...) is fine, so it's stripped out before
  * matching — `apiUrl('/api/health')` does not trip this check the way a bare
- * `'/api/health'` would.
+ * `'/api/health'` would. That stripper only recognizes a literal that appears
+ * immediately after `apiUrl(`; it does not walk balanced parens, so a literal
+ * buried inside a larger expression passed to apiUrl(...) (e.g. one arm of a
+ * ternary) is invisible to it and still trips the check even though the code
+ * is correct.
  *
- * A literal that must legitimately stay relative — e.g. it's compared against
- * a value the server itself produced, rather than used to build a request —
- * can opt out with a trailing `// relative-ok` comment giving a short reason.
- * Use it sparingly: it silences the whole line, not just the one match.
+ * Two distinct opt-outs exist for the two distinct reasons a line can still be
+ * flagged after that — do not conflate them, each documents a different claim:
+ *
+ *   // relative-ok: <reason>   — the literal legitimately stays relative and
+ *     unwrapped. E.g. it's compared against a value the server itself
+ *     produced rather than used to build a request, or it's resolved by some
+ *     other apiOrigin()-aware helper instead of apiUrl() directly.
+ *
+ *   // guard-gap: <reason>     — the literal IS correctly wrapped in
+ *     apiUrl(...); the stripper above just can't see it (the paren-walking
+ *     limitation described above). The code needs no change — only this
+ *     checker's limited literal-after-apiUrl( pattern does.
+ *
+ * Both require a reason after the colon. Use either sparingly: it silences
+ * the whole line, not just the one match.
  */
 import { readFileSync, globSync } from 'node:fs'
 import path from 'node:path'
@@ -25,12 +40,14 @@ const files = globSync('src/**/*.{ts,tsx}', { cwd: process.cwd() })
 
 const WRAPPED = /apiUrl\(\s*(['"`])(?:(?!\1).)*\1/g
 const pattern = /['"`]\/(api|uploads)[/'"`]/
+const RELATIVE_OK = /\/\/\s*relative-ok:\s*\S/
+const GUARD_GAP = /\/\/\s*guard-gap:\s*\S/
 const offenders = []
 
 for (const file of files) {
   const lines = readFileSync(file, 'utf8').split('\n')
   lines.forEach((line, i) => {
-    if (/\/\/\s*relative-ok/.test(line)) return
+    if (RELATIVE_OK.test(line) || GUARD_GAP.test(line)) return
     const stripped = line.replace(WRAPPED, '')
     if (pattern.test(stripped)) offenders.push(`${file}:${i + 1}: ${line.trim()}`)
   })
