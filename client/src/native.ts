@@ -17,10 +17,12 @@ export async function initNative(): Promise<void> {
     // The client's safe-area CSS only covers the desktop breakpoint, so on
     // the phone-sized viewport this app actually runs at, nothing pads for
     // the status bar. Fix it at the native layer instead: stop the webview
-    // from drawing under the status bar at all, and colour the band to match
-    // the shell's splash background so it isn't left unstyled.
+    // from drawing under the status bar at all, so content is never hidden
+    // behind it, and set the status bar icons/text to a style that reads on
+    // a light band (setBackgroundColor is deliberately not called here — on
+    // API >= 35 it's a no-op unless the theme opts out of edge-to-edge, which
+    // this app's theme does not).
     await StatusBar.setOverlaysWebView({ overlay: false })
-    await StatusBar.setBackgroundColor({ color: '#0f172a' })
     await StatusBar.setStyle({ style: Style.Dark })
   } catch (err) {
     console.error('[native] StatusBar setup failed', err)
