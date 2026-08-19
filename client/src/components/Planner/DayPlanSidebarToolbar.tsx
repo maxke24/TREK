@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { ChevronsDownUp, ChevronsUpDown, FileDown, Undo2, ArrowUpDown, CalendarPlus, Route as RouteIcon } from 'lucide-react'
 import { apiUrl } from '../../api/origin'
+import { saveAndOpen } from '../../native'
 import { downloadTripPDF } from '../PDF/TripPDF'
 import { DayReorderPopup } from './DayReorderPopup'
 import Tooltip from '../shared/Tooltip'
@@ -151,6 +152,7 @@ export function DayPlanSidebarToolbar({
                     const res = await fetch(apiUrl(`/api/trips/${tripId}/export.ics`), { credentials: 'include' })
                     if (!res.ok) throw new Error()
                     const blob = await res.blob()
+                    if (await saveAndOpen(`trip-${tripId}.ics`, blob)) return
                     const url = URL.createObjectURL(blob)
                     const a = document.createElement('a')
                     a.href = url

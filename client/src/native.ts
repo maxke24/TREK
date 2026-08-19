@@ -44,3 +44,35 @@ export async function initNative(): Promise<void> {
     console.error('[native] back-button listener registration failed', err)
   }
 }
+
+/**
+ * Writes a generated file to the device and hands it to the OS.
+ *
+ * Returns false in a browser, where the caller's anchor download already
+ * works. Under Capacitor the anchor is a no-op — there is no download manager
+ * behind https://localhost — so the bytes go to the cache directory and the
+ * share sheet decides what opens them.
+ */
+export async function saveAndOpen(filename: string, blob: Blob): Promise<boolean> {
+  if (!('Capacitor' in window)) return false
+
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
+  const { Share } = await import('@capacitor/share')
+
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error)
+    // readAsDataURL gives "data:<mime>;base64,<data>" — Filesystem wants the tail.
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.readAsDataURL(blob)
+  })
+
+  const written = await Filesystem.writeFile({
+    path: filename,
+    data: base64,
+    directory: Directory.Cache,
+  })
+
+  await Share.share({ title: filename, url: written.uri })
+  return true
+}
