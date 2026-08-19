@@ -125,6 +125,9 @@ jobs:
       - name: Page pattern check
         run: cd client && npm run lint:pages
 
+      - name: Absolute URL check
+        run: cd client && npm run lint:urls
+
       - name: Run tests
         run: cd client && npm run test:coverage
 
