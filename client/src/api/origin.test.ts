@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { apiOrigin, apiUrl, wsUrl, absoluteUrl } from './origin'
+import { apiOrigin, apiUrl, wsUrl, absoluteUrl, resolveServerUrl } from './origin'
 
 /**
  * The web build must stay relative — a regression here would break every
@@ -43,5 +43,32 @@ describe('api origin', () => {
   it('absoluteUrl falls back to the page location when no origin is configured', () => {
     vi.stubEnv('VITE_TREK_ORIGIN', '')
     expect(absoluteUrl('/api/trips/1/feed/token')).toBe(`${window.location.origin}/api/trips/1/feed/token`)
+  })
+
+  describe('resolveServerUrl', () => {
+    it('prefixes a server-relative path when an origin is configured', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test')
+      expect(resolveServerUrl('/uploads/avatars/1.png')).toBe('https://trek.example.test/uploads/avatars/1.png')
+    })
+
+    it('leaves a server-relative path relative when no origin is configured (web build must not change)', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', '')
+      expect(resolveServerUrl('/uploads/avatars/1.png')).toBe('/uploads/avatars/1.png')
+    })
+
+    it('returns an already-absolute value unchanged', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test')
+      expect(resolveServerUrl('https://accounts.google.com/pic.jpg')).toBe('https://accounts.google.com/pic.jpg')
+      expect(resolveServerUrl('http://example.test/pic.jpg')).toBe('http://example.test/pic.jpg')
+      expect(resolveServerUrl('data:image/png;base64,abcd')).toBe('data:image/png;base64,abcd')
+      expect(resolveServerUrl('blob:https://localhost/abcd-1234')).toBe('blob:https://localhost/abcd-1234')
+    })
+
+    it('handles empty and undefined input without throwing', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test')
+      expect(resolveServerUrl('')).toBe('')
+      expect(resolveServerUrl(null)).toBe('')
+      expect(resolveServerUrl(undefined)).toBe('')
+    })
   })
 })

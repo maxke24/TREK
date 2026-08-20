@@ -28,6 +28,27 @@ export function absoluteUrl(path: string): string {
   return `${origin}${path.startsWith('/') ? '' : '/'}${path}`
 }
 
+/**
+ * Resolves a value the *server* returned at runtime (an `avatar_url`, a photo
+ * path, anything read off a response body) into something that will actually
+ * load.
+ *
+ * Unlike `apiUrl()` and `absoluteUrl()`, the input here is not a literal the
+ * client authored — it's just a string by the time it reaches us, so
+ * `lint:urls` cannot see it and there is nothing to grep for. If it's already
+ * absolute (`http(s)://`, `data:`, `blob:`) it's returned unchanged; if it's
+ * an app-relative path (starts with `/`) it's prefixed with `apiOrigin()`,
+ * same as `apiUrl()` — empty on the web build, so a relative path stays
+ * relative there. Falsy input passes through rather than throwing, since
+ * server payloads routinely carry a null/empty url field.
+ */
+export function resolveServerUrl(value: string | null | undefined): string {
+  if (!value) return value ?? ''
+  if (/^(https?:|data:|blob:)/i.test(value)) return value
+  if (value.startsWith('/')) return `${apiOrigin()}${value}`
+  return value
+}
+
 /** Full websocket URL. Falls back to the page's own host on web builds. */
 export function wsUrl(token: string): string {
   const origin = apiOrigin()
