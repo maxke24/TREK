@@ -1,5 +1,6 @@
 import { getCachedBlob } from '../db/offlineDb'
 import { isEffectivelyOffline } from '../sync/networkMode'
+import { apiOrigin, resolveServerUrl } from '../api/origin'
 
 // MIME types safe to open inline (will not execute script in any browser).
 // Everything else (text/html, image/svg+xml, text/javascript, …) is forced to
@@ -16,11 +17,20 @@ const SAFE_INLINE_TYPES = new Set([
 ])
 
 /**
- * Asserts that `url` is a relative same-origin path so that
- * `credentials: 'include'` cannot be used to send the session cookie to an
- * external host (e.g. if an attacker somehow controls the `url` value).
+ * Asserts that `url` is either a relative same-origin path, or — on the
+ * Android shell build only — the one origin that build was compiled to talk
+ * to (`apiOrigin()`), so that `credentials: 'include'` cannot be used to send
+ * the session cookie to an external host (e.g. if an attacker somehow
+ * controls the `url` value). The web build's `apiOrigin()` is always empty,
+ * so there this degrades to exactly the original relative-only check.
+ *
+ * The apiOrigin() branch requires the literal `${origin}/` prefix — not just
+ * `startsWith(origin)` — so a lookalike host that merely starts with the same
+ * characters (`https://trek.example.test.evil.com`) cannot slip through.
  */
 function assertRelativeUrl(url: string): void {
+  const origin = apiOrigin()
+  if (origin && url.startsWith(`${origin}/`)) return
   if (!url.startsWith('/') || url.startsWith('//') || url.startsWith('/\\')) {
     throw new Error(`Refusing to fetch non-relative URL: ${url}`)
   }
@@ -49,9 +59,15 @@ function isIosStandalone(): boolean {
  * straight to the cache; when online we fetch live and only fall back if the
  * network actually fails — which also covers flaky links where navigator.onLine
  * still reports true ("sometimes it works, sometimes it doesn't").
+ *
+ * The offline cache is keyed by the server's original (relative) `url`, so
+ * cache reads stay keyed on the untouched `url` even though the live fetch
+ * below goes out to `resolvedUrl` — the two must stay in sync with what the
+ * trip sync manager wrote the cache entry under.
  */
 async function getFileBlob(url: string): Promise<Blob> {
-  assertRelativeUrl(url)
+  const resolvedUrl = resolveServerUrl(url)
+  assertRelativeUrl(resolvedUrl)
   if (typeof navigator !== 'undefined' && isEffectivelyOffline()) {
     const cached = await getCachedBlob(url)
     if (cached) return cached
@@ -59,7 +75,7 @@ async function getFileBlob(url: string): Promise<Blob> {
   }
   let resp: Response
   try {
-    resp = await fetch(url, { credentials: 'include' })
+    resp = await fetch(resolvedUrl, { credentials: 'include' })
   } catch (err) {
     // Genuine network failure — the fetch itself rejected (offline, or a flaky
     // link even though navigator.onLine is true). Serve the pre-downloaded copy.
