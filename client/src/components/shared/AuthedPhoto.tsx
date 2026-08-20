@@ -3,9 +3,8 @@ import { fetchImageAsBlob } from '../../api/authUrl'
 import { apiOrigin } from '../../api/origin'
 
 /**
- * Renders an auth-gated server image (`/api/photos/...`,
- * `/api/integrations/memories/...`) that a plain `<img src>` cannot load in
- * the Android shell.
+ * Renders an auth-gated server image (photos, memories-provider assets — see
+ * the callers) that a plain `<img src>` cannot load in the Android shell.
  *
  * The shell serves the bundle from `https://localhost` and talks to the real
  * TREK origin, so once `src` is absolutized the image request is cross-site.
