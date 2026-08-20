@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { getCategoryIcon } from './categoryIcons'
 import { getCached, isLoading, fetchPhoto, onThumbReady } from '../../services/photoService'
 import { useAuthStore } from '../../store/authStore'
+import { useAuthedPhotoUrl } from '../../hooks/useAuthedPhotoUrl'
 import type { Place } from '../../types'
 
 interface Category {
@@ -79,11 +80,24 @@ export default React.memo(function PlaceAvatar({ place, size = 32, category }: P
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   }
 
-  if (photoSrc) {
+  // photoSrc is one of: a data: thumb (already safe — no cross-origin/cookie
+  // issue), the /api/maps/place-photo/... proxy path (auth-gated: needs the
+  // same blob-fetch treatment as AuthedPhoto, since a plain <img src>
+  // cross-site from the Android shell can't carry the session cookie), or —
+  // rarely, from a legacy DB row — an arbitrary external URL that was never
+  // behind our auth and must NOT be blob-fetched (no CORS grant, unlike a
+  // plain <img> which doesn't need one just to paint pixels). Only the
+  // proxy-path case goes through useAuthedPhotoUrl(); on the web build it's
+  // a synchronous passthrough, so effectiveSrc === photoSrc there either way.
+  const isProxyPhoto = !!photoSrc && photoSrc.startsWith('/api/maps/place-photo/') // relative-ok: comparing against a server-produced value, not building a request
+  const authedPhotoSrc = useAuthedPhotoUrl(isProxyPhoto ? photoSrc : null)
+  const effectiveSrc = isProxyPhoto ? authedPhotoSrc : photoSrc
+
+  if (photoSrc && effectiveSrc) {
     return (
       <div ref={ref} style={containerStyle}>
         <img
-          src={photoSrc}
+          src={effectiveSrc}
           alt={place.name}
           decoding="async"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}

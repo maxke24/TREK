@@ -143,6 +143,10 @@ vi.mock('../../hooks/useGeolocation', () => ({
   })),
 }))
 
+vi.mock('../../api/authUrl', () => ({
+  fetchImageAsBlob: vi.fn(),
+}))
+
 vi.mock('../../services/photoService', () => ({
   getCached: vi.fn(() => null),
   isLoading: vi.fn(() => false),
@@ -675,5 +679,81 @@ describe('MapViewGL', () => {
     await act(async () => {})
 
     expect(glMap.fitBounds.mock.calls.length).toBe(afterDayFit)
+  })
+
+  describe('Android shell build: /api/maps/place-photo proxy photos (#followup-a)', () => {
+    afterEach(async () => {
+      vi.unstubAllEnvs()
+      const { fetchImageAsBlob } = await import('../../api/authUrl')
+      vi.mocked(fetchImageAsBlob).mockReset()
+    })
+
+    it('web build: marker element gets the raw proxy path, no blob fetch (no-op)', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', '')
+      glMap.on.mockImplementation((event: string, handlerOrLayer: unknown) => {
+        if (event === 'load' && typeof handlerOrLayer === 'function') (handlerOrLayer as () => void)()
+        return glMap
+      })
+      const { fetchImageAsBlob } = await import('../../api/authUrl')
+      const mapboxgl = (await import('mapbox-gl')).default
+      const places = [buildMapPlace({ id: 50, lat: 48.8584, lng: 2.2945, image_url: '/api/maps/place-photo/abc/bytes' })]
+      render(<MapViewGL places={places} fitKey={1} />)
+      await act(async () => {})
+
+      const markerCall = (mapboxgl.Marker as unknown as ReturnType<typeof vi.fn>).mock.calls
+        .find(c => (c[0]?.element as HTMLElement)?.innerHTML?.includes('<img'))
+      expect(markerCall).toBeTruthy()
+      const el = markerCall![0].element as HTMLElement
+      expect(el.innerHTML).toContain('/api/maps/place-photo/abc/bytes')
+      expect(fetchImageAsBlob).not.toHaveBeenCalled()
+    })
+
+    it('native build: resolves the proxy path to a blob before it reaches the marker element', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test')
+      glMap.on.mockImplementation((event: string, handlerOrLayer: unknown) => {
+        if (event === 'load' && typeof handlerOrLayer === 'function') (handlerOrLayer as () => void)()
+        return glMap
+      })
+      const { fetchImageAsBlob } = await import('../../api/authUrl')
+      vi.mocked(fetchImageAsBlob).mockResolvedValue('blob:https://localhost/marker-gl-1')
+      const mapboxgl = (await import('mapbox-gl')).default
+      const places = [buildMapPlace({ id: 51, lat: 48.8584, lng: 2.2945, image_url: '/api/maps/place-photo/abc/bytes' })]
+      render(<MapViewGL places={places} fitKey={1} />)
+      await act(async () => {})
+      await act(async () => {}) // let the resolved blob's re-reconcile pass run
+
+      const photoCalls = (mapboxgl.Marker as unknown as ReturnType<typeof vi.fn>).mock.calls
+        .filter(c => (c[0]?.element as HTMLElement)?.innerHTML?.includes('<img'))
+      const lastPhotoCall = photoCalls[photoCalls.length - 1]
+      expect(lastPhotoCall).toBeTruthy()
+      const el = lastPhotoCall![0].element as HTMLElement
+      expect(el.innerHTML).toContain('blob:https://localhost/marker-gl-1')
+      expect(el.innerHTML).not.toContain('/api/maps/place-photo/abc/bytes')
+      expect(fetchImageAsBlob).toHaveBeenCalledWith('https://trek.example.test/api/maps/place-photo/abc/bytes')
+    })
+
+    it('native build: revokes the object URL once a place with a photo is removed', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test')
+      glMap.on.mockImplementation((event: string, handlerOrLayer: unknown) => {
+        if (event === 'load' && typeof handlerOrLayer === 'function') (handlerOrLayer as () => void)()
+        return glMap
+      })
+      const { fetchImageAsBlob } = await import('../../api/authUrl')
+      vi.mocked(fetchImageAsBlob).mockResolvedValue('blob:https://localhost/marker-gl-2')
+      const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+      const place = buildMapPlace({ id: 52, lat: 48.8584, lng: 2.2945, image_url: '/api/maps/place-photo/xyz/bytes' })
+
+      const { rerender } = render(<MapViewGL places={[place]} fitKey={1} />)
+      await act(async () => {})
+      await act(async () => {})
+
+      // Place removed entirely — its object URL is no longer referenced by
+      // anything and must be revoked rather than leaked.
+      rerender(<MapViewGL places={[]} fitKey={1} />)
+      await act(async () => {})
+
+      expect(revokeSpy).toHaveBeenCalledWith('blob:https://localhost/marker-gl-2')
+      revokeSpy.mockRestore()
+    })
   })
 })

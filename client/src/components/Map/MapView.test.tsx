@@ -6,6 +6,12 @@ import userEvent from '@testing-library/user-event'
 import { resetAllStores } from '../../../tests/helpers/store'
 import { buildPlace, buildReservation } from '../../../tests/helpers/factories'
 import * as photoService from '../../services/photoService'
+import L from 'leaflet'
+import { fetchImageAsBlob } from '../../api/authUrl'
+
+vi.mock('../../api/authUrl', () => ({
+  fetchImageAsBlob: vi.fn(),
+}))
 
 const mapMock = vi.hoisted(() => ({
   panTo: vi.fn(),
@@ -376,5 +382,38 @@ describe('MapView', () => {
     } as any)
     render(<MapView reservations={[reservation]} visibleConnectionIds={[42]} />)
     expect(screen.getAllByTestId('polyline').length).toBeGreaterThan(0)
+  })
+
+  describe('Android shell build: /api/maps/place-photo proxy photos (#followup-a)', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+      vi.mocked(fetchImageAsBlob).mockReset()
+    })
+
+    it('web build: divIcon gets the raw proxy path, no blob fetch (no-op)', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', '')
+      const places = [buildMapPlace({ id: 30, lat: 48.0, lng: 2.0, image_url: '/api/maps/place-photo/abc/bytes' })]
+      render(<MapView places={places} />)
+      expect(screen.getByTestId('marker')).toBeTruthy()
+      const photoCall = vi.mocked(L.divIcon).mock.calls.find(c => (c[0].html as string).includes('<img'))
+      expect(photoCall?.[0].html).toContain('/api/maps/place-photo/abc/bytes')
+      expect(fetchImageAsBlob).not.toHaveBeenCalled()
+    })
+
+    it('native build: resolves the proxy path to a blob before it reaches divIcon', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test')
+      vi.mocked(fetchImageAsBlob).mockResolvedValue('blob:https://localhost/marker-1')
+      const places = [buildMapPlace({ id: 31, lat: 48.0, lng: 2.0, image_url: '/api/maps/place-photo/abc/bytes' })]
+      render(<MapView places={places} />)
+
+      await waitFor(() => {
+        const photoCall = vi.mocked(L.divIcon).mock.calls.find(c => (c[0].html as string).includes('<img'))
+        expect(photoCall?.[0].html).toContain('blob:https://localhost/marker-1')
+      })
+      expect(fetchImageAsBlob).toHaveBeenCalledWith('https://trek.example.test/api/maps/place-photo/abc/bytes')
+      // The raw proxy path must never reach the marker HTML on the native build.
+      const photoCalls = vi.mocked(L.divIcon).mock.calls.filter(c => (c[0].html as string).includes('<img'))
+      expect(photoCalls.every(c => !(c[0].html as string).includes('/api/maps/place-photo/abc/bytes'))).toBe(true)
+    })
   })
 })

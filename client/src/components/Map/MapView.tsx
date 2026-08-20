@@ -16,6 +16,7 @@ import type { Reservation } from '../../types'
 import { POI_CATEGORY_BY_KEY, type Poi } from './poiCategories'
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../../constants/mapDefaults'
 import { computeMapViewport, TILE_SIZE_RASTER, type ViewportPadding } from '../../utils/mapViewport'
+import { useAuthedPhotoUrl } from '../../hooks/useAuthedPhotoUrl'
 
 function categoryIconSvg(iconName: string | null | undefined, size: number): string {
   const IconComponent = (iconName && CATEGORY_ICON_MAP[iconName]) || CATEGORY_ICON_MAP['MapPin']
@@ -76,8 +77,10 @@ function createPlaceIcon(place, orderNumbers, isSelected) {
   }
 
   // Prefer base64 data URLs (no zoom lag); also accept same-origin proxy URLs as a fallback
-  // while the thumb is still being generated in the background
-  if (place.image_url && (place.image_url.startsWith('data:') || place.image_url.startsWith('/api/maps/place-photo/'))) { // relative-ok: comparing against a server-produced value, not building a request
+  // while the thumb is still being generated in the background, and blob:
+  // URLs — what a proxy URL becomes on the Android shell build once
+  // MemoMarker resolves it through useAuthedPhotoUrl() (see below).
+  if (place.image_url && (place.image_url.startsWith('data:') || place.image_url.startsWith('blob:') || place.image_url.startsWith('/api/maps/place-photo/'))) { // relative-ok: comparing against a server-produced value, not building a request
     const imgIcon = L.divIcon({
       className: '',
       html: `<div style="
@@ -423,7 +426,18 @@ interface MemoMarkerProps {
 const MemoMarker = memo(function MemoMarker({
   place, isSelected, orderNumbers, photoUrl, onClickPlace, onHover, onHoverOut,
 }: MemoMarkerProps) {
-  const icon = createPlaceIcon({ ...place, image_url: photoUrl }, orderNumbers, isSelected)
+  // photoUrl is either a data: thumb (safe as-is) or the
+  // /api/maps/place-photo/... proxy path — auth-gated, so it needs the same
+  // blob-fetch treatment AuthedPhoto uses for Journey photos. MemoMarker is a
+  // real per-place React component (one instance per marker, unmounted when
+  // its place leaves the map), so it can call the hook directly rather than
+  // needing MapViewGL's batch cache (see the comment there for why that one
+  // differs). A synchronous passthrough on the web build, so this is a no-op
+  // there — see useAuthedPhotoUrl's docstring.
+  const isProxyPhoto = !!photoUrl && photoUrl.startsWith('/api/maps/place-photo/') // relative-ok: comparing against a server-produced value, not building a request
+  const authedPhotoUrl = useAuthedPhotoUrl(isProxyPhoto ? photoUrl : null)
+  const effectivePhotoUrl = isProxyPhoto ? (authedPhotoUrl ?? null) : photoUrl
+  const icon = createPlaceIcon({ ...place, image_url: effectivePhotoUrl }, orderNumbers, isSelected)
   return (
     <Marker
       position={[place.lat, place.lng]}

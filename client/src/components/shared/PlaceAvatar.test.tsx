@@ -1,5 +1,6 @@
-import { render, screen, fireEvent, act } from '../../../tests/helpers/render';
+import { render, screen, fireEvent, act, waitFor } from '../../../tests/helpers/render';
 import { getCached, isLoading, fetchPhoto, onThumbReady } from '../../services/photoService';
+import { fetchImageAsBlob } from '../../api/authUrl';
 
 // Mock photoService — all functions are no-ops / return null
 vi.mock('../../services/photoService', () => ({
@@ -7,6 +8,10 @@ vi.mock('../../services/photoService', () => ({
   isLoading: vi.fn(() => false),
   fetchPhoto: vi.fn(),
   onThumbReady: vi.fn(() => () => {}),
+}));
+
+vi.mock('../../api/authUrl', () => ({
+  fetchImageAsBlob: vi.fn(),
 }));
 
 // Mock IntersectionObserver as a class constructor
@@ -181,5 +186,47 @@ describe('PlaceAvatar', () => {
   it('FE-COMP-AVATAR-016: does not set up IntersectionObserver when image_url present', () => {
     render(<PlaceAvatar place={basePlaceWithImage} />);
     expect(mockObserve).not.toHaveBeenCalled();
+  });
+
+  describe('Android shell build: /api/maps/place-photo proxy photos (#followup-a)', () => {
+    const basePlaceWithProxyImage = {
+      ...basePlaceNoImage,
+      image_url: '/api/maps/place-photo/ChIJabc/bytes',
+    };
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.mocked(fetchImageAsBlob).mockReset();
+    });
+
+    it('web build: renders the proxy path directly, no blob fetch (no-op)', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', '');
+      render(<PlaceAvatar place={basePlaceWithProxyImage} />);
+      const img = screen.getByRole('img') as HTMLImageElement;
+      expect(img.src).toContain('/api/maps/place-photo/ChIJabc/bytes');
+      expect(fetchImageAsBlob).not.toHaveBeenCalled();
+    });
+
+    it('native build: resolves the proxy path to a blob before rendering', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test');
+      vi.mocked(fetchImageAsBlob).mockResolvedValue('blob:https://localhost/place-photo-1');
+      render(<PlaceAvatar place={basePlaceWithProxyImage} />);
+
+      // Pending: the img isn't rendered until the blob resolves.
+      expect(screen.queryByRole('img')).toBeNull();
+
+      await waitFor(() => expect(screen.getByRole('img')).toBeTruthy());
+      const img = screen.getByRole('img') as HTMLImageElement;
+      expect(img.src).toBe('blob:https://localhost/place-photo-1');
+      expect(fetchImageAsBlob).toHaveBeenCalledWith('https://trek.example.test/api/maps/place-photo/ChIJabc/bytes');
+    });
+
+    it('native build: a plain external image_url (legacy data) is never blob-fetched', () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test');
+      render(<PlaceAvatar place={basePlaceWithImage} />);
+      const img = screen.getByRole('img') as HTMLImageElement;
+      expect(img.src).toContain('eiffel.jpg');
+      expect(fetchImageAsBlob).not.toHaveBeenCalled();
+    });
   });
 });

@@ -7,6 +7,8 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useAuthStore } from '../../store/authStore'
 import { getCached, isLoading, fetchPhoto, onThumbReady, getAllThumbs } from '../../services/photoService'
+import { fetchImageAsBlob } from '../../api/authUrl'
+import { apiOrigin, resolveServerUrl } from '../../api/origin'
 import { CATEGORY_ICON_MAP } from '../shared/categoryIcons'
 import { isStandardFamily, supportsCustom3d, wantsTerrain, addCustom3dBuildings, addTerrainAndSky } from './mapboxSetup'
 import { attachLocationMarker, type LocationMarkerHandle } from './locationMarkerMapbox'
@@ -143,7 +145,11 @@ function createMarkerElement(place: Place & { category_color?: string; category_
   // to its stacked slot, not to the map viewport.
   wrap.style.cssText = `width:${outer}px;height:${outer}px;cursor:pointer;`
 
-  const hasPhoto = photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('/api/maps/place-photo/')) // relative-ok: comparing against a server-produced value, not building a request
+  // data: thumbs and the /api/maps/place-photo/... proxy path are safe to
+  // drop straight into <img src>; blob: is what the proxy path becomes on
+  // the Android shell build once the caller resolves it through the blob
+  // cache below (auth-gated — see that cache's comment for why).
+  const hasPhoto = photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('blob:') || photoUrl.startsWith('/api/maps/place-photo/')) // relative-ok: comparing against a server-produced value, not building a request
   if (hasPhoto) {
     wrap.innerHTML = `
       <div style="
@@ -230,6 +236,18 @@ export function MapViewGL({
   const enableMapbox3d = !isMapLibre && mapbox3d
   const placesPhotosEnabled = useAuthStore(s => s.placesPhotosEnabled)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>(getAllThumbs)
+  // Blob-object-URL cache for /api/maps/place-photo/... proxy photos on the
+  // Android shell build — see the resolve effect below for why this can't
+  // just be a per-marker useAuthedPhotoUrl() call the way MapView's
+  // MemoMarker does it. Keyed by the raw proxy path so it's shared/deduped
+  // across places and survives marker rebuilds; a ref (not state) because
+  // it's mutated outside React's render cycle and read synchronously from
+  // the imperative reconcile effect.
+  const blobPhotoUrlsRef = useRef<Map<string, string>>(new Map())
+  const blobPhotoUrlsInFlightRef = useRef<Set<string>>(new Set())
+  // Bumped whenever blobPhotoUrlsRef changes, purely to give the reconcile
+  // effect below a dependency to react to (mutating a ref doesn't re-render).
+  const [blobPhotoTick, setBlobPhotoTick] = useState(0)
   const [mapReady, setMapReady] = useState(false)
   // Hover tooltip — a cursor-following name/category/address card, matching the
   // Leaflet map's overlay exactly (no anchored popup, no photo thumbnail).
@@ -741,6 +759,67 @@ export function MapViewGL({
     }
   }, [placeIds, placesPhotosEnabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Resolve /api/maps/place-photo/... proxy photos to blob object URLs on the
+  // Android shell build, and garbage-collect entries no longer referenced by
+  // any place. Mirrors the thumb-fetch effect above, but can't be a
+  // per-marker useAuthedPhotoUrl() call the way MapView's MemoMarker does it
+  // — markers here are plain DOM elements rebuilt by the imperative
+  // reconcile effect below, not React components, and a hook can't be
+  // called inside that loop (rules of hooks). So this keeps its own small
+  // cache instead and calls fetchImageAsBlob() directly — the same
+  // primitive useAuthedPhotoUrl() wraps, just with cache/lifecycle
+  // management shaped for a batch of markers instead of one component
+  // instance. A no-op on the web build: apiOrigin() is empty there and a
+  // plain relative <img src> already works, so nothing here may fetch.
+  useEffect(() => {
+    if (!apiOrigin()) return
+    const activeUrls = new Set<string>()
+    for (const place of places) {
+      const pck = place.google_place_id || place.osm_id || `${place.lat},${place.lng}`
+      const raw = (pck && photoUrls[pck]) || place.image_url || null
+      if (raw && !raw.startsWith('data:')) activeUrls.add(raw)
+    }
+
+    // Markers are recreated on every pan/zoom (see "Recreate marker each
+    // time" below), so without pruning here the object-URL cache — and the
+    // blob URLs it holds alive — would grow unbounded as the user browses
+    // the map instead of just tracking the photos currently in view.
+    let cacheChanged = false
+    for (const [url, blobUrl] of blobPhotoUrlsRef.current) {
+      if (!activeUrls.has(url)) {
+        URL.revokeObjectURL(blobUrl)
+        blobPhotoUrlsRef.current.delete(url)
+        cacheChanged = true
+      }
+    }
+
+    let cancelled = false
+    for (const url of activeUrls) {
+      if (blobPhotoUrlsRef.current.has(url) || blobPhotoUrlsInFlightRef.current.has(url)) continue
+      blobPhotoUrlsInFlightRef.current.add(url)
+      fetchImageAsBlob(resolveServerUrl(url)).then(blobUrl => {
+        blobPhotoUrlsInFlightRef.current.delete(url)
+        if (cancelled) { if (blobUrl) URL.revokeObjectURL(blobUrl); return }
+        if (!blobUrl) return
+        blobPhotoUrlsRef.current.set(url, blobUrl)
+        setBlobPhotoTick(t => t + 1)
+      })
+    }
+    if (cacheChanged) setBlobPhotoTick(t => t + 1)
+
+    return () => { cancelled = true }
+  }, [places, photoUrls])
+
+  // Revoke every cached blob object URL on unmount — the per-render effect
+  // above only prunes entries that fall out of the active set, which never
+  // fires for the still-active ones still referenced right up to teardown.
+  useEffect(() => {
+    return () => {
+      for (const blobUrl of blobPhotoUrlsRef.current.values()) URL.revokeObjectURL(blobUrl)
+      blobPhotoUrlsRef.current.clear()
+    }
+  }, [])
+
   // Reconcile markers with places + photos. The clustered GeoJSON source decides
   // which points are currently unclustered, and we render the existing rich HTML
   // marker DOM only for those visible leaves — clustered points show up as the GL
@@ -770,7 +849,15 @@ export function MapViewGL({
       visiblePlaces.forEach(place => {
         const orderNumbers = dayOrderMap[place.id] ?? null
         const pck = place.google_place_id || place.osm_id || `${place.lat},${place.lng}`
-        const photoUrl = (pck && photoUrls[pck]) || place.image_url || null
+        const rawPhotoUrl = (pck && photoUrls[pck]) || place.image_url || null
+        // A data: thumb is safe as-is; the /api/maps/place-photo/... proxy
+        // path is auth-gated and only reaches the marker once resolved to a
+        // blob by the effect above (null — falls back to the category icon
+        // — while that resolution is still pending, same loading state the
+        // thumb fetch already produces before its own data: url arrives).
+        const photoUrl = !apiOrigin() || !rawPhotoUrl || rawPhotoUrl.startsWith('data:')
+          ? rawPhotoUrl
+          : (blobPhotoUrlsRef.current.get(rawPhotoUrl) || null)
         const selected = place.id === selectedPlaceId
         const el = createMarkerElement(place as Place & { category_color?: string; category_icon?: string }, photoUrl, orderNumbers, selected)
         el.addEventListener('click', (ev) => {
@@ -860,7 +947,7 @@ export function MapViewGL({
       map.off('zoomend', scheduleReconcile)
       map.off('idle', scheduleReconcile)
     }
-  }, [places, selectedPlaceId, dayOrderMap, photoUrls, mapReady, glProvider])
+  }, [places, selectedPlaceId, dayOrderMap, photoUrls, blobPhotoTick, mapReady, glProvider])
 
   // Reconcile OSM "explore" POI markers (imperative, kept separate from the
   // planned-place markers so they don't cluster or get confused with them).

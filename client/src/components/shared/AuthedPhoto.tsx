@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-import { fetchImageAsBlob } from '../../api/authUrl'
 import { apiOrigin } from '../../api/origin'
+import { useAuthedPhotoUrl } from '../../hooks/useAuthedPhotoUrl'
 
 /**
  * Renders an auth-gated server image (photos, memories-provider assets — see
@@ -11,15 +10,15 @@ import { apiOrigin } from '../../api/origin'
  * `trek_session` is `SameSite=Lax`, so a browser withholds it on a cross-site
  * `<img>` fetch and the server answers 403 — even though the URL is correct.
  * `CapacitorHttp` patches `fetch()`, not `<img>`, so routing the request
- * through `fetchImageAsBlob()` (`fetch(src, { credentials: 'include' })`)
- * carries the cookie from the native jar instead, then hands the image back
- * as a blob object URL.
+ * through `useAuthedPhotoUrl()` (`fetch(src, { credentials: 'include' })`,
+ * shared with the map-marker photo sites) carries the cookie from the native
+ * jar instead, then hands the image back as a blob object URL.
  *
- * `src` must already be resolved by the caller (`apiUrl()` /
- * `resolveServerUrl()`). On the web build `apiOrigin()` is empty and the
- * request is same-origin, so this renders a plain `<img>` — no blob fetch, no
- * behaviour change: same native lazy-loading/caching, same `onError` handling
- * as before this component existed.
+ * `src` may be relative or already absolute — `useAuthedPhotoUrl()` resolves
+ * it. On the web build `apiOrigin()` is empty and the request is
+ * same-origin, so this renders a plain `<img>` — no blob fetch, no
+ * behaviour change: same native lazy-loading/caching, same `onError`
+ * handling as before this component existed.
  *
  * `fallbackSrc`, when given, is tried (also via blob fetch) if the primary
  * fetch fails — the native-build equivalent of an `onError` src swap, since a
@@ -31,29 +30,8 @@ export function AuthedPhoto({ src, fallbackSrc, onError, ...imgProps }: {
   onError?: React.ReactEventHandler<HTMLImageElement>
 } & Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'onError' | 'src'>) {
   const needsBlob = !!apiOrigin()
-  const [blobSrc, setBlobSrc] = useState('')
-
-  useEffect(() => {
-    if (!needsBlob) return
-    let cancelled = false
-    let created = ''
-    setBlobSrc('')
-    ;(async () => {
-      let url = await fetchImageAsBlob(src)
-      if (!url && fallbackSrc) url = await fetchImageAsBlob(fallbackSrc)
-      if (cancelled) {
-        if (url) URL.revokeObjectURL(url)
-        return
-      }
-      created = url
-      setBlobSrc(url)
-    })()
-    return () => {
-      cancelled = true
-      if (created) URL.revokeObjectURL(created)
-    }
-  }, [needsBlob, src, fallbackSrc])
+  const resolvedSrc = useAuthedPhotoUrl(src, fallbackSrc)
 
   if (!needsBlob) return <img src={src} onError={onError} {...imgProps} />
-  return blobSrc ? <img src={blobSrc} {...imgProps} /> : null
+  return resolvedSrc ? <img src={resolvedSrc} {...imgProps} /> : null
 }
