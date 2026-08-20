@@ -20,7 +20,7 @@ import {
   Zap,
 } from 'lucide-react';
 import React from 'react';
-import { apiUrl } from '../api/origin';
+import { apiOrigin, apiUrl } from '../api/origin';
 import ToggleSwitch from '../components/Settings/ToggleSwitch';
 import { SUPPORTED_LANGUAGES, useTranslation } from '../i18n';
 import { useLogin } from './login/useLogin';
@@ -71,7 +71,10 @@ export default function LoginPage(): React.ReactElement {
     handlePasskeyLogin,
   } = useLogin();
 
-  const oidcButtonShown = !!(appConfig?.oidc_configured && appConfig?.oidc_login && !oidcOnly);
+  // OIDC completes in the system browser, which sets the cookie outside the
+  // app's native jar — hide the entry point in the Android shell rather than
+  // show a button that appears to work but leaves the app logged out.
+  const oidcButtonShown = !!(appConfig?.oidc_configured && appConfig?.oidc_login && !oidcOnly && !apiOrigin());
   const passkeyAvailable = !!(
     appConfig?.passkey_login &&
     appConfig?.passkey_configured &&
@@ -711,37 +714,46 @@ export default function LoginPage(): React.ReactElement {
                     {error}
                   </div>
                 )}
-                <a
-                  href={apiUrl(`/api/auth/oidc/login${inviteToken ? '?invite=' + encodeURIComponent(inviteToken) : ''}`)}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: '#111827',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 12,
-                    fontSize: 'calc(14px * var(--fs-scale-body, 1))',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    textDecoration: 'none',
-                    transition: 'background 180ms cubic-bezier(0.23,1,0.32,1)',
-                    boxSizing: 'border-box',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.background = '#1f2937';
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.background = '#111827';
-                  }}
-                >
-                  <Shield size={16} />
-                  {t('login.oidcSignIn', { name: appConfig?.oidc_display_name || 'SSO' })}
-                </a>
+                {/* OIDC completes in the system browser, which sets the cookie
+                    outside the app's native jar — hide the entry point in the
+                    Android shell rather than show a button that appears to
+                    work but leaves the app logged out. Note: this is the only
+                    sign-in method rendered on this branch (oidcOnly), so an
+                    instance with no password login configured currently has
+                    no working sign-in path from inside the app. */}
+                {!apiOrigin() && (
+                  <a
+                    href={apiUrl(`/api/auth/oidc/login${inviteToken ? '?invite=' + encodeURIComponent(inviteToken) : ''}`)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      background: '#111827',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 12,
+                      fontSize: 'calc(14px * var(--fs-scale-body, 1))',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      textDecoration: 'none',
+                      transition: 'background 180ms cubic-bezier(0.23,1,0.32,1)',
+                      boxSizing: 'border-box',
+                    }}
+                    onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                      e.currentTarget.style.background = '#1f2937';
+                    }}
+                    onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                      e.currentTarget.style.background = '#111827';
+                    }}
+                  >
+                    <Shield size={16} />
+                    {t('login.oidcSignIn', { name: appConfig?.oidc_display_name || 'SSO' })}
+                  </a>
+                )}
               </>
             ) : (
               <>
@@ -1296,8 +1308,11 @@ export default function LoginPage(): React.ReactElement {
             )}
           </div>
 
-          {/* OIDC / SSO login button (only when OIDC is configured, oidc_login enabled, not in oidc-only mode) */}
-          {appConfig?.oidc_configured && appConfig?.oidc_login && !oidcOnly && (
+          {/* OIDC / SSO login button (only when OIDC is configured, oidc_login enabled,
+              not in oidc-only mode, and not in the Android shell — see oidcButtonShown:
+              OIDC completes in the system browser, which sets the cookie outside the
+              app's native jar, so the divider above it would be stranded without it). */}
+          {oidcButtonShown && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
                 <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
@@ -1339,7 +1354,7 @@ export default function LoginPage(): React.ReactElement {
                 }}
               >
                 <Shield size={16} />
-                {t('login.oidcSignIn', { name: appConfig.oidc_display_name })}
+                {t('login.oidcSignIn', { name: appConfig?.oidc_display_name })}
               </a>
             </>
           )}

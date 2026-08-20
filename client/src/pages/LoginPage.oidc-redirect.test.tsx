@@ -102,4 +102,68 @@ describe('LoginPage — OIDC redirect preservation', () => {
       });
     });
   });
+
+  describe('FE-PAGE-LOGIN-026: OIDC auto-redirect suppressed in the Android shell', () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    // Spies on `window.location.href =` without letting jsdom attempt a real
+    // navigation (which errors). Reads pass through to the real location so
+    // anything else that happens to read it during the test keeps working.
+    function mockLocationHref() {
+      const hrefSetter = vi.fn();
+      const original = window.location;
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        writable: true,
+        value: {
+          ...original,
+          set href(value: string) {
+            hrefSetter(value);
+          },
+          get href() {
+            return original.href;
+          },
+        },
+      });
+      return hrefSetter;
+    }
+
+    const oidcOnlyConfig = {
+      has_users: true,
+      allow_registration: false,
+      demo_mode: false,
+      oidc_configured: true,
+      oidc_only_mode: true,
+      password_login: false,
+      oidc_login: true,
+      setup_complete: true,
+    };
+
+    it('does not navigate the webview to the OIDC endpoint when apiOrigin() is set', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test');
+      const hrefSetter = mockLocationHref();
+      server.use(http.get('/api/auth/app-config', () => HttpResponse.json(oidcOnlyConfig)));
+
+      render(<LoginPage />);
+
+      // Give the app-config fetch + effect a tick to run.
+      await waitFor(() => {
+        expect(screen.getByText(/password authentication is disabled/i)).toBeInTheDocument();
+      });
+
+      expect(hrefSetter).not.toHaveBeenCalled();
+    });
+
+    it('still auto-redirects on the web build (apiOrigin() unset) — unchanged behavior', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', '');
+      const hrefSetter = mockLocationHref();
+      server.use(http.get('/api/auth/app-config', () => HttpResponse.json(oidcOnlyConfig)));
+
+      render(<LoginPage />);
+
+      await waitFor(() => {
+        expect(hrefSetter).toHaveBeenCalledWith('/api/auth/oidc/login');
+      });
+    });
+  });
 });

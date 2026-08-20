@@ -5,7 +5,7 @@ import { useSettingsStore, hasStoredLanguage } from '../../store/settingsStore'
 import { useTranslation, detectBrowserLanguage } from '../../i18n'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { authApi, configApi } from '../../api/client'
-import { apiUrl } from '../../api/origin'
+import { apiOrigin, apiUrl } from '../../api/origin'
 import { getApiErrorMessage } from '../../types'
 
 interface AppConfig {
@@ -157,7 +157,12 @@ export function useLogin() {
           if (!config.has_users) setMode('register')
           // Skip auto-redirect when config is from cache — network is unreliable
           // and auto-redirecting to the IdP could loop if the proxy changed.
-          if (!fromCache && !config.password_login && config.oidc_login && config.oidc_configured && config.has_users && !invite && !noRedirect) {
+          // Also skip it in the Android shell: OIDC completes in the system
+          // browser, which sets the cookie outside the app's native jar, so
+          // sending the webview there would strand the user mid-flow instead
+          // of signing them in. LoginPage renders the (oidc-only) screen
+          // without its sign-in button in that case — see oidcOnly there.
+          if (!fromCache && !apiOrigin() && !config.password_login && config.oidc_login && config.oidc_configured && config.has_users && !invite && !noRedirect) {
             window.location.href = apiUrl('/api/auth/oidc/login')
           }
         }

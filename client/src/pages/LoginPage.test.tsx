@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '../../tests/helpers/render';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -622,6 +622,102 @@ describe('LoginPage', () => {
         writable: true,
         value: { ...window.location, search: originalSearch },
       });
+    });
+  });
+
+  describe('FE-PAGE-LOGIN-025: OIDC entry points hidden in the Android shell', () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('hides the "or sign in with SSO" divider and link when apiOrigin() is set', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test');
+      server.use(
+        http.get('/api/auth/app-config', () => {
+          return HttpResponse.json({
+            has_users: true,
+            allow_registration: true,
+            demo_mode: false,
+            oidc_configured: true,
+            oidc_display_name: 'Okta',
+            oidc_only_mode: false,
+            oidc_login: true,
+            password_login: true,
+            password_registration: true,
+            setup_complete: true,
+          });
+        }),
+      );
+
+      render(<LoginPage />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(EMAIL_PLACEHOLDER)).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/sign in with okta/i)).toBeNull();
+      // The divider ("or") is part of the same conditional block as the SSO
+      // link, so it should disappear along with it rather than being left
+      // stranded above nothing.
+      expect(screen.queryByText('or')).toBeNull();
+    });
+
+    it('still shows the SSO link on the web build (apiOrigin() unset)', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', '');
+      server.use(
+        http.get('/api/auth/app-config', () => {
+          return HttpResponse.json({
+            has_users: true,
+            allow_registration: true,
+            demo_mode: false,
+            oidc_configured: true,
+            oidc_display_name: 'Okta',
+            oidc_only_mode: false,
+            oidc_login: true,
+            password_login: true,
+            password_registration: true,
+            setup_complete: true,
+          });
+        }),
+      );
+
+      render(<LoginPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/sign in with okta/i)).toBeInTheDocument();
+      });
+    });
+
+    it('hides the SSO button on the oidc-only screen when apiOrigin() is set, stranding no fallback', async () => {
+      vi.stubEnv('VITE_TREK_ORIGIN', 'https://trek.example.test');
+      server.use(
+        http.get('/api/auth/app-config', () => {
+          return HttpResponse.json({
+            has_users: true,
+            allow_registration: false,
+            demo_mode: false,
+            oidc_configured: true,
+            oidc_display_name: 'Okta',
+            oidc_only_mode: true,
+            password_login: false,
+            oidc_login: true,
+            setup_complete: true,
+          });
+        }),
+      );
+
+      // No noRedirect needed here (unlike FE-PAGE-LOGIN-017): useLogin's
+      // auto-redirect to the OIDC endpoint is itself gated on apiOrigin(),
+      // so with VITE_TREK_ORIGIN set it never fires — see the oidc-redirect
+      // suite for direct coverage of that gate.
+      render(<LoginPage />);
+
+      // The instance explanation still renders...
+      await waitFor(() => {
+        expect(screen.getByText(/password authentication is disabled/i)).toBeInTheDocument();
+      });
+      // ...but the app has no way to act on it: no password fields (this
+      // instance has none configured) and no SSO button (hidden in-shell).
+      expect(screen.queryByPlaceholderText(EMAIL_PLACEHOLDER)).toBeNull();
+      expect(screen.queryByText(/sign in with okta/i)).toBeNull();
     });
   });
 });
