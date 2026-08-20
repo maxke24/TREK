@@ -5,6 +5,7 @@ import Modal from '../../components/shared/Modal'
 import PermissionsPanel from '../../components/Admin/PermissionsPanel'
 import type { TranslationFn } from '../../types'
 import type { useAdmin } from './useAdmin'
+import { resolveServerUrl } from '../../api/origin'
 
 interface AdminUsersTabProps {
   admin: ReturnType<typeof useAdmin>
@@ -65,7 +66,7 @@ export default function AdminUsersTab({ admin, t, locale }: AdminUsersTabProps):
                       <div className="flex items-center gap-2">
                         <div className="relative">
                           {u.avatar_url ? (
-                            <img src={u.avatar_url} alt={u.username} className="w-8 h-8 rounded-full object-cover" />
+                            <img src={resolveServerUrl(u.avatar_url)} alt={u.username} className="w-8 h-8 rounded-full object-cover" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium text-slate-700">
                               {u.username.charAt(0).toUpperCase()}

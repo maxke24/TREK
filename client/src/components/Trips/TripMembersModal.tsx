@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Modal from '../shared/Modal'
 import { tripsApi, authApi, shareApi, tripInviteApi } from '../../api/client'
+import { resolveServerUrl } from '../../api/origin'
 import { useToast } from '../shared/Toast'
 import { useAuthStore } from '../../store/authStore'
 import { useCanDo } from '../../store/permissionsStore'
@@ -18,7 +19,7 @@ interface AvatarProps {
 
 function Avatar({ username, avatarUrl, size = 32 }: AvatarProps) {
   if (avatarUrl) {
-    return <img src={avatarUrl} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+    return <img src={resolveServerUrl(avatarUrl)} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
   }
   const letter = (username || '?')[0].toUpperCase()
   const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#06b6d4']

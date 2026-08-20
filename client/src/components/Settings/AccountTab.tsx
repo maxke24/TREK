@@ -5,6 +5,7 @@ import { useTranslation } from '../../i18n'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../shared/Toast'
 import { authApi, adminApi } from '../../api/client'
+import { resolveServerUrl } from '../../api/origin'
 import { getApiErrorMessage } from '../../types'
 import type { UserWithOidc } from '../../types'
 import Section from './Section'
@@ -403,7 +404,7 @@ export default function AccountTab(): React.ReactElement {
         <div className="flex items-center gap-4">
           <div style={{ position: 'relative', flexShrink: 0 }}>
             {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
+              <img src={resolveServerUrl(user.avatar_url)} alt="" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
               <div className="bg-surface-hover text-content-secondary" style={{
                 width: 64, height: 64, borderRadius: '50%',

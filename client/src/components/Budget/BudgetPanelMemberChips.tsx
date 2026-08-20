@@ -2,6 +2,7 @@ import ReactDOM from 'react-dom'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Pencil, Users, Check } from 'lucide-react'
 import type { BudgetItemMember } from '../../types'
+import { resolveServerUrl } from '../../api/origin'
 
 export interface TripMember {
   id: number
@@ -47,7 +48,7 @@ export function ChipWithTooltip({ label, avatarUrl, size = 20, paid, onClick }: 
           transition: 'border-color 0.15s, background 0.15s',
         }}>
         {avatarUrl
-          ? <img src={avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={resolveServerUrl(avatarUrl)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : label?.[0]?.toUpperCase()
         }
       </div>
@@ -163,7 +164,7 @@ export default function BudgetMemberChips({ members = [], tripMembers = [], onSe
                   color: 'var(--text-muted)', overflow: 'hidden', flexShrink: 0,
                 }}>
                   {tm.avatar_url
-                    ? <img src={tm.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <img src={resolveServerUrl(tm.avatar_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : tm.username?.[0]?.toUpperCase()
                   }
                 </div>

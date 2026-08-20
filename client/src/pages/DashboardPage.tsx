@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from '../i18n'
-import { apiUrl } from '../api/origin'
+import { apiUrl, resolveServerUrl } from '../api/origin'
 import Navbar from '../components/Layout/Navbar'
 import DemoBanner from '../components/Layout/DemoBanner'
 import TripFormModal from '../components/Trips/TripFormModal'
@@ -350,7 +350,7 @@ function BoardingPassHero({ trip, bundle, locale, onOpen, onEdit, onCopy, onArch
         <div className="buddies-avatars">
           {members.slice(0, 4).map((m, i) => (
             m.avatar_url
-              ? <img key={m.id} className="buddy-avatar" src={m.avatar_url} alt={m.username} style={{ objectFit: 'cover' }} />
+              ? <img key={m.id} className="buddy-avatar" src={resolveServerUrl(m.avatar_url)} alt={m.username} style={{ objectFit: 'cover' }} />
               : <div key={m.id} className="buddy-avatar" style={{ background: buddyColor(i) }}>{initials(m.username)}</div>
           ))}
           {members.length > 4 && <div className="buddy-more">+{members.length - 4}</div>}

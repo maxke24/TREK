@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom'
 import { useState, useRef } from 'react'
+import { resolveServerUrl } from '../../api/origin'
 
 export function AvatarChip({ name, avatarUrl, size = 20 }: { name: string; avatarUrl?: string | null; size?: number }) {
   const [hover, setHover] = useState(false)
@@ -24,7 +25,7 @@ export function AvatarChip({ name, avatarUrl, size = 20 }: { name: string; avata
           cursor: 'default',
         }}>
         {avatarUrl
-          ? <img src={avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={resolveServerUrl(avatarUrl)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : name?.[0]?.toUpperCase()
         }
       </div>
