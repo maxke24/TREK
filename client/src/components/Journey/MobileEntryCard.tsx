@@ -1,6 +1,7 @@
 import { MapPin, Camera, Smile, Laugh, Meh, Frown, Sun, CloudSun, Cloud, CloudRain, CloudLightning, Snowflake } from 'lucide-react'
 import { apiUrl } from '../../api/origin'
 import { formatLocationName } from '../../utils/formatters'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 import type { JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
 
 const MOOD_ICONS: Record<string, typeof Smile> = {
@@ -78,7 +79,7 @@ export default function MobileEntryCard({ entry, dayLabel, dayColor, isActive, o
         {/* Photo thumbnail */}
         {thumbSrc ? (
           <div className={`${isActive ? 'w-[110px]' : 'w-[90px]'} flex-shrink-0 relative overflow-hidden transition-all duration-100`}>
-            <img
+            <AuthedPhoto
               src={thumbSrc}
               alt=""
               className="w-full h-full object-cover"

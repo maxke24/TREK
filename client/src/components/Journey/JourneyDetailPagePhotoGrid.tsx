@@ -1,11 +1,12 @@
 import { Image } from 'lucide-react'
 import type { JourneyPhoto } from '../../store/journeyStore'
 import { photoUrl } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 
 export function PhotoImg({ photo, className, style, onClick }: { photo: JourneyPhoto; className?: string; style?: React.CSSProperties; onClick?: () => void }) {
   const src = photoUrl(photo, 'thumbnail')
   return (
-    <img
+    <AuthedPhoto
       src={src}
       alt=""
       className={className}

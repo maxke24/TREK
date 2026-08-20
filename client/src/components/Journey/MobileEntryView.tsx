@@ -8,6 +8,7 @@ import {
 import { apiUrl } from '../../api/origin'
 import JournalBody from './JournalBody'
 import { formatLocationName } from '../../utils/formatters'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 import type { JourneyEntry, JourneyPhoto } from '../../store/journeyStore'
 
 const MOOD_CONFIG: Record<string, { icon: typeof Smile; label: string; bg: string; text: string }> = {
@@ -87,7 +88,7 @@ export default function MobileEntryView({ entry, readOnly, publicPhotoUrl, onClo
         {/* Hero photo(s) */}
         {photos.length > 0 && (
           <div className="relative">
-            <img
+            <AuthedPhoto
               src={photoUrl(photos[0], 'original', publicPhotoUrl)}
               alt=""
               className="w-full max-h-[50vh] object-cover cursor-pointer"
@@ -103,7 +104,7 @@ export default function MobileEntryView({ entry, readOnly, publicPhotoUrl, onClo
             {photos.length > 1 && (
               <div className="flex gap-1 px-4 py-2 overflow-x-auto bg-zinc-50 dark:bg-zinc-900">
                 {photos.map((p, i) => (
-                  <img
+                  <AuthedPhoto
                     key={p.id || i}
                     src={photoUrl(p, 'thumbnail', publicPhotoUrl)}
                     alt=""

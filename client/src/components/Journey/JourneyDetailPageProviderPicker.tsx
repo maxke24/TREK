@@ -6,6 +6,7 @@ import type { JourneyEntry, JourneyTrip } from '../../store/journeyStore'
 import { groupPhotosByDate } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
 import { ScrollTrigger } from './JourneyDetailPageScrollTrigger'
 import { DatePicker } from './JourneyDetailPageDatePicker'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 
 export function ProviderPicker({ provider, userId, entries, trips, existingAssetIds, onClose, onAdd }: {
   provider: string
@@ -348,8 +349,9 @@ export function ProviderPicker({ provider, userId, entries, trips, existingAsset
                                 : 'cursor-pointer'
                           }`}
                         >
-                          <img
+                          <AuthedPhoto
                             src={apiUrl(`/api/integrations/memories/${provider}/assets/0/${asset.id}/${userId}/thumbnail${selectedAlbumPassphrase ? `?passphrase=${encodeURIComponent(selectedAlbumPassphrase)}` : ''}`)}
+                            fallbackSrc={apiUrl(`/api/integrations/memories/${provider}/assets/0/${asset.id}/${userId}/original${selectedAlbumPassphrase ? `?passphrase=${encodeURIComponent(selectedAlbumPassphrase)}` : ''}`)}
                             alt=""
                             className="w-full h-full object-cover"
                             loading="lazy"

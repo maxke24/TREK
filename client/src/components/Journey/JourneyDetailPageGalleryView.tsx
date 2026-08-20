@@ -11,6 +11,7 @@ import { getApiErrorMessage } from '../../types'
 import type { JourneyEntry, GalleryPhoto, JourneyTrip } from '../../store/journeyStore'
 import { photoUrl } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
 import { ProviderPicker } from './JourneyDetailPageProviderPicker'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 
 export function GalleryView({ entries, gallery, journeyId, userId, trips, onPhotoClick, onRefresh }: {
   entries: JourneyEntry[]
@@ -169,7 +170,7 @@ export function GalleryView({ entries, gallery, journeyId, userId, trips, onPhot
                 // neutral tile rather than a broken 404 thumbnail (#823).
                 <div className="w-full h-full bg-zinc-200 dark:bg-zinc-800" />
               ) : (
-                <img
+                <AuthedPhoto
                   src={photoUrl(photo, 'thumbnail')}
                   alt={photo.caption || ''}
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"

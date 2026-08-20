@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import VideoPlayer from './VideoPlayer'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 
 interface LightboxPhoto {
   id: string
@@ -113,7 +114,7 @@ export default function PhotoLightbox({ photos, startIndex = 0, onClose }: Props
         {photo.mediaType === 'video' ? (
           <VideoPlayer key={photo.id} src={photo.src} />
         ) : (
-          <img
+          <AuthedPhoto
             key={photo.id}
             src={photo.src}
             alt={photo.caption || ''}

@@ -10,6 +10,7 @@ import { getApiErrorMessage } from '../../types'
 import type { JourneyEntry, JourneyPhoto, GalleryPhoto } from '../../store/journeyStore'
 import { MOOD_CONFIG, WEATHER_CONFIG } from '../../pages/journeyDetail/JourneyDetailPage.constants'
 import { photoUrl } from '../../pages/journeyDetail/JourneyDetailPage.helpers'
+import { AuthedPhoto } from '../shared/AuthedPhoto'
 import MarkdownToolbar from './MarkdownToolbar'
 import { DatePicker } from './JourneyDetailPageDatePicker'
 
@@ -212,7 +213,7 @@ export function EntryEditor({ entry, journeyId, tripDates, galleryPhotos, onClos
                       className="relative w-full rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-zinc-900 dark:hover:ring-white hover:ring-offset-1 dark:hover:ring-offset-zinc-900 transition-all"
                       style={{ paddingTop: '100%' }}
                     >
-                      <img src={photoUrl(gp)} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={e => { const img = e.currentTarget; const orig = photoUrl(gp, 'original'); if (!img.src.includes('/original')) img.src = orig }} />
+                      <AuthedPhoto src={photoUrl(gp)} fallbackSrc={photoUrl(gp, 'original')} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={e => { const img = e.currentTarget; const orig = photoUrl(gp, 'original'); if (!img.src.includes('/original')) img.src = orig }} />
                     </div>
                   ))}
                   {availableGalleryPhotos.length === 0 && (
@@ -226,7 +227,7 @@ export function EntryEditor({ entry, journeyId, tripDates, galleryPhotos, onClos
                 <div className="flex flex-wrap gap-2">
                   {photos.map((p, idx) => (
                     <div key={p.id} className={`w-20 h-20 rounded-lg overflow-hidden relative group ${idx === 0 && photos.length > 1 ? 'ring-2 ring-zinc-900 dark:ring-white ring-offset-1 dark:ring-offset-zinc-900' : ''}`}>
-                      <img src={photoUrl(p)} className="w-full h-full object-cover" alt="" onError={e => { const img = e.currentTarget; const orig = photoUrl(p, 'original'); if (!img.src.includes('/original')) img.src = orig }} />
+                      <AuthedPhoto src={photoUrl(p)} fallbackSrc={photoUrl(p, 'original')} className="w-full h-full object-cover" alt="" onError={e => { const img = e.currentTarget; const orig = photoUrl(p, 'original'); if (!img.src.includes('/original')) img.src = orig }} />
                       {idx === 0 && photos.length > 1 && (
                         <span className="absolute bottom-0.5 left-0.5 px-1 py-px rounded text-[8px] font-bold bg-zinc-900/70 text-white">{t('journey.editor.photoFirst')}</span>
                       )}
